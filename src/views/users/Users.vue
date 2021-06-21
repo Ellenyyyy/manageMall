@@ -2,7 +2,7 @@
   <div>
     <el-breadcrumb separator="/">
       <el-breadcrumb-item :to="{ path: '/home' }">首页</el-breadcrumb-item>
-      <el-breadcrumb-item><a href="/">用户管理</a></el-breadcrumb-item>
+      <el-breadcrumb-item>用户管理</el-breadcrumb-item>
       <el-breadcrumb-item>用户列表</el-breadcrumb-item>
     </el-breadcrumb>
     <el-card class="card">
@@ -36,7 +36,7 @@
             <el-button type="danger" icon="el-icon-delete" size="mini" @click="removeById(scope.row.id)"></el-button>
 
             <el-tooltip effect="dark" content="分配角色" placement="top" :enterable="false">
-              <el-button type="warning" icon="el-icon-setting" size="mini"></el-button>
+              <el-button type="warning" icon="el-icon-setting" size="mini" @click="setRole(scope.row)"></el-button>
             </el-tooltip>
 
           </template>
@@ -104,11 +104,40 @@
     <el-button type="primary" @click="editUser">确 定</el-button>
   </span>
     </el-dialog>
+    <el-dialog
+            title="提示"
+            :visible.sync="setDialogVisible"
+            width="50%" @close="setDialogClosed">
+      <div>
+        <p>当前用户:{{userInfo.username}}</p>
+        <p>当前角色:{{userInfo.role_name}}</p>
+        <p>分配新角色:
+          <el-select v-model="selectedRoleId" placeholder="请选择新角色">
+            <el-option
+                    v-for="item in roleList"
+                    :key="item.id"
+                    :label="item.roleName"
+                    :value="item.id">
+            </el-option>
+          </el-select>
+        </p>
+      </div>
+      <span slot="footer" class="dialog-footer">
+    <el-button @click="setDialogVisible = false">取 消</el-button>
+    <el-button type="primary" @click="saveRoleInfo">确 定</el-button>
+  </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-  import {getUsersList, editUsersState, addUserList, editUserList, editUserInfo, removeUserList} from "network/users"
+  import {getUsersList,
+    editUsersState,
+    addUserList,
+    editUserList,
+    editUserInfo,
+    removeUserList,
+    getRoleList,saveRoleInfoNet} from "network/users"
 
   export default {
     name: "Users",
@@ -172,7 +201,11 @@
             {required: true, message: '请输入用户手机', trigger: 'blur'},
             {validator: checkMobile, trigger: 'blur'}
           ],
-        }
+        },
+        setDialogVisible: false,
+        userInfo: {},
+        roleList: [],
+        selectedRoleId: ''
       }
     },
     created() {
@@ -242,6 +275,21 @@
         }
         this.removeUserList(uid)
       },
+      setRole(row){
+        this.setDialogVisible = true
+        this.userInfo = row
+        this.getRoleList()
+      },
+      saveRoleInfo(){
+        if(!this.selectedRoleId){
+          return this.$message.error('请选择要分配的角色')
+        }
+        this.saveRoleInfoNet(this.userInfo.id,this.selectedRoleId)
+      },
+      setDialogClosed(){
+        this.selectedRoleId = ''
+        this.userInfo = {}
+      },
       //网络请求
       getUsersList() {
         getUsersList(this.queryInfo.query, this.queryInfo.pagenum, this.queryInfo.pagesize).then(res => {
@@ -291,6 +339,28 @@
           }
           this.$message.success('删除成功!')
           this.getUsersList();
+        })
+      },
+      getRoleList(){
+        getRoleList().then( res => {
+          // console.log(res);
+          if(res.data.meta.status !== 200){
+            return this.$message.error('获取信息失败')
+          }
+          this.roleList = res.data.data
+          // console.log(this.roleList)
+          // return this.$message.success('获取信息成功')
+        })
+      },
+      saveRoleInfoNet(uid,rid){
+        saveRoleInfoNet(uid,rid).then( res => {
+          // console.log(res);
+          if(res.data.meta.status !== 200){
+            return this.$message.error('更新角色失败')
+          }
+          this.$message.success('更新角色成功')
+          this.getUsersList()
+          this.setDialogVisible = false
         })
       }
     }

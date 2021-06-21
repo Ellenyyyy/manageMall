@@ -49,3 +49,21 @@ export function removeUserList(uid) {
     method: 'delete',
   })
 }
+
+
+export function getRoleList() {
+  return request({
+    url: '/roles',
+    method: 'get',
+  })
+}
+
+export function saveRoleInfoNet(uid,str) {
+  return request({
+    url: `/users/${uid}/role`,
+    method: 'put',
+    data: {
+      rid: str
+    }
+  })
+}
